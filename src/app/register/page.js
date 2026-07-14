@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signUp } from "@/lib/auth-client";
 
+const SAFE_ERROR_CODES = new Set([
+  "PASSWORD_TOO_SHORT",
+  "PASSWORD_TOO_LONG",
+  "INVALID_EMAIL",
+]);
+
 export default function RegisterPage() {
   const router = useRouter();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
@@ -27,12 +33,16 @@ export default function RegisterPage() {
     });
 
     if (error) {
-      setError(error.message);
+      setError(
+        SAFE_ERROR_CODES.has(error.code)
+          ? error.message
+          : "Something went wrong, Please check your details and try again later",
+      );
       setLoading(false);
       return;
     }
 
-    router.push("/login");
+    router.push("/login?registered=1");
   }
 
   return (
