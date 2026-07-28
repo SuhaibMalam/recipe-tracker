@@ -4,7 +4,7 @@
 
 Recipe ingredients are now normalized (`Ingredient` / `RecipeIngredient` join model, migrated) and the authenticated dashboard shell exists. Recipe create/edit forms still write against the old model shape and need to be wired up to the new relation. `schema.prisma` also has an **unmigrated** change adding a `recipeId`/`recipe` relation to `NutritionLog` — run `prisma migrate dev` for that before building anything that depends on it.
 
-The register page duplicate-`router.push` bug flagged on 2026-07-07 is still unfixed, and got worse: it now fires `router.push("/login")` followed immediately by `router.push("/login?registered=1")`, and the real `error.message` from Better Auth is swallowed in favor of a generic string (`error.message` is commented out).
+The register page bugs flagged on 2026-07-07/2026-07-14 are now fixed and committed (`3a9014a`): only one `router.push("/login?registered=1")` fires, and errors are shown via an allowlist (`SAFE_ERROR_CODES`) so only known-safe Better Auth error messages reach the user instead of raw backend errors.
 
 ---
 
@@ -18,16 +18,28 @@ The register page duplicate-`router.push` bug flagged on 2026-07-07 is still unf
 
 # Development History
 
-## 2026-07-14
+## 2026-07-14 (later session)
 
 ### Summary
 
-Reviewed uncommitted working-tree changes (nothing new committed). Prettier-style formatting pass on `schema.prisma`, plus a new `NutritionLog.recipeId` relation to `Recipe` that has not been migrated yet. `auth.js`/login/register/dashboard/SignOutButton from 2026-07-07 are still uncommitted.
+Fixed a broken local dev environment: `node_modules` (extracted from a zip archive) had corrupted/blocked native binaries, causing `next dev` to OOM-crash on startup. Reinstalled clean (`rm -rf node_modules .next && npm install`); `next dev` now starts normally. Committed and pushed all pending working-tree changes from the earlier 2026-07-14 session (`3a9014a`): normalized `Ingredient`/`RecipeIngredient` schema + migration, dashboard page, `SignOutButton`, and the login/register UX/error-handling fixes. `.claude/` and the duplicate `Claude.md` were deliberately left untracked (local tooling config, not project code).
 
-### Bugs Found
+### Bugs Fixed
 
-- Register page now has two consecutive `router.push` calls (`/login` then `/login?registered=1`) — the first was supposed to be removed, not left alongside the new one.
-- Register page error handling now shows a generic hardcoded message instead of `error.message` (the real message is commented out) — hides validation/auth errors from the user during development.
+- Register page's duplicate `router.push` (flagged 2026-07-07, worsened 2026-07-14 earlier) — confirmed already resolved in the committed code, only `router.push("/login?registered=1")` remains.
+- Register page error handling — confirmed already resolved: errors are filtered through a `SAFE_ERROR_CODES` allowlist rather than swallowed into one generic string.
+
+### Next Task
+
+See "Next Task" above.
+
+---
+
+## 2026-07-14 (earlier session)
+
+### Summary
+
+Reviewed uncommitted working-tree changes (nothing new committed at the time). Prettier-style formatting pass on `schema.prisma`, plus a new `NutritionLog.recipeId` relation to `Recipe` that has not been migrated yet. `auth.js`/login/register/dashboard/SignOutButton from 2026-07-07 were still uncommitted at the time (now committed, see session above).
 
 ### Next Task
 

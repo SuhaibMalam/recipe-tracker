@@ -45,8 +45,12 @@ function LoginForm() {
   }
 
   return (
-    <main className="flex items-center justify-center min-h-screen">
-      <div className="bg-white p-8 rounded-2xl shadow-md w-full max-w-md">
+    <main className="flex flex-col items-center justify-center min-h-screen gap-6 bg-gradient-to-br from-green-50 via-white to-emerald-50 px-4">
+      <Link href="/" className="text-2xl font-bold text-green-600">
+        Recipe Tracker
+      </Link>
+
+      <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-md">
         <h1 className="text-2xl font-bold text-gray-800 mb-2">Welcome back</h1>
         <p className="text-gray-500 text-sm mb-6">Sign in to your account</p>
 
