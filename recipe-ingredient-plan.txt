@@ -1,0 +1,170 @@
+WIRE RECIPE CREATE/EDIT FORMS TO RECIPEINGREDIENT
+===================================================
+
+CONTEXT
+-------
+prisma/schema.prisma already has the normalized Recipe / Ingredient /
+RecipeIngredient model, migrated back on 2026-07-09
+(20260709082135_fix_recipe_ingredient_syntax). Since then, "wire up recipe
+create/edit forms to RecipeIngredient" has sat unchanged as the "Next Task"
+in PROJECT_STATE.md across three sessions (07-07, 07-09, 07-14) — nothing
+has landed on it. Confirmed by exploration: zero recipe-related API routes,
+forms, or list/detail pages exist anywhere in src/. This is greenfield work
+built on top of an already-migrated schema, not a refactor.
+
+Correction to PROJECT_STATE.md: it claims NutritionLog.recipeId is an
+"unmigrated" schema change requiring `prisma migrate dev` before this work.
+That's stale — the relation is present in the very first init migration and
+already matches the schema. No migration step is needed before starting.
+
+Scope for this milestone:
+1. Forms + API + a minimal recipe list on the dashboard (not forms/API in
+   isolation) — the dashboard's hardcoded "No recipes yet" card gets
+   replaced with a real list, so the create -> view -> edit loop is visible
+   end-to-end.
+2. Add `zod` as the validation library — one shared schema reused by both
+   the client form and the server API routes, so validation rules can't
+   drift apart.
+
+ARCHITECTURE
+------------
+- Server components fetch via Prisma directly (src/lib/prisma.js's `prisma`
+  singleton) — the established pattern (dashboard/page.js already does this
+  for auth). No self-fetch over HTTP from server components.
+- API routes exist for real external consumers (the client form's fetch
+  calls) and enforce the actual trust boundary: session-derived userId
+  (never client-supplied), ownership checks returning 404 (not 403) for
+  someone else's recipe id, and server-side zod validation.
+- `displayOrder` on RecipeIngredient is derived from array index
+  server-side — never accepted from the client.
+- Edit (PATCH) does a full delete-and-recreate of a recipe's
+  RecipeIngredient rows rather than diffing. Simplest correct approach for
+  a single-user, low-concurrency app; no other model has an FK into
+  RecipeIngredient.id, so regenerating ids on every edit is safe. Revisit
+  only if a future feature needs row identity to survive an edit.
+- Ingredient names are normalized (trim().toLowerCase()) in the shared zod
+  schema before they ever reach Ingredient.upsert, since Ingredient.name is
+  @unique and Postgres string comparison is case-sensitive — "Egg" and
+  "egg" would otherwise silently fork into two rows.
+- Unit is a fixed <select> (g, kg, ml, l, tsp, tbsp, cup, piece, oz, lb) —
+  UI-only decision (no DB enum exists), prevents typo fragmentation of a
+  field that future nutrition math may depend on. No "Other" free-text
+  escape hatch this round; adding one later is additive, not a migration.
+- Nutrition fields (calories/protein/carbs/fat/imageUrl) are deliberately
+  excluded from this milestone's form/schema — already nullable in Prisma,
+  so omitting them requires no schema change. They belong to a separate
+  future "nutrition entry" milestone per the project's own dashboard
+  roadmap.
+
+FILES
+-----
+Created:
+- src/lib/validation/recipe.js
+    Shared zod schema: recipeSchema (title, optional description, steps,
+    ingredients[] min 1) and recipeIngredientSchema (name trimmed +
+    lowercased, quantity coerced positive number, unit). Single source of
+    truth imported by both the form and the API routes.
+
+- src/app/api/recipes/route.js
+    POST (create: validates, transactionally upserts each Ingredient by
+    name and creates its RecipeIngredient row) and GET (list current
+    user's recipes, minimal shape with ingredient count).
+
+- src/app/api/recipes/[id]/route.js
+    GET (single recipe, ownership-checked) and PATCH (update: validates,
+    updates the Recipe row, then delete-and-recreates its
+    RecipeIngredient rows in a transaction).
+
+- src/components/RecipeForm.js
+    "use client", shared by create and edit. Dynamic ingredient rows
+    (add/remove), zod validation with per-field errors, loading/submit
+    error state, unit <select>. Reuses the existing visual pattern from
+    login/register pages (bg-white rounded-2xl shadow-sm border-gray-100
+    cards, green-600 buttons, bg-red-50 text-red-600 error banners).
+
+- src/app/recipes/new/page.js
+    Server component: session check (redirect /login if none), renders
+    <RecipeForm mode="create" />.
+
+- src/app/recipes/[id]/edit/page.js
+    Server component: session + ownership check (notFound() if recipe
+    doesn't exist or isn't the user's — same 404-for-both rule as the
+    API), fetches the recipe directly via Prisma with its ingredients,
+    renders <RecipeForm mode="edit" recipe={...} />.
+
+- src/app/recipes/layout.js
+    Shared nav/container wrapper for /recipes/* pages, matching
+    dashboard/page.js's nav markup instead of duplicating it across new
+    and edit.
+
+Modified:
+- src/app/dashboard/page.js
+    Replace the static empty-state card with a real Prisma-backed list of
+    the user's recipes (title + ingredient count, each linking to
+    /recipes/[id]/edit), keep the empty-state card for the zero-recipes
+    case, add an "Add Recipe" link to /recipes/new.
+
+- package.json
+    Add zod as a new dependency.
+
+IMPLEMENTATION PLAN
+--------------------
+1. npm install zod; add src/lib/validation/recipe.js.
+2. Build src/app/api/recipes/route.js (POST + GET) and
+   src/app/api/recipes/[id]/route.js (GET + PATCH), each guarded by
+   auth.api.getSession({ headers: await headers() }) and ownership checks,
+   using the shared schema and Prisma transactions described above.
+3. Build src/components/RecipeForm.js against that API contract.
+4. Add src/app/recipes/layout.js, src/app/recipes/new/page.js,
+   src/app/recipes/[id]/edit/page.js.
+5. Update src/app/dashboard/page.js to list recipes and link to
+   create/edit.
+
+API CONTRACT (for reference while coding)
+------------------------------------------
+POST   /api/recipes          -> 201 { recipe: {...} } | 400 | 401
+GET    /api/recipes          -> 200 { recipes: [{ id, title, createdAt, ingredientCount }] } | 401
+GET    /api/recipes/[id]     -> 200 { recipe: {...} } | 401 | 404
+PATCH  /api/recipes/[id]     -> 200 { recipe: {...} } | 400 | 401 | 404
+
+Request body (POST and PATCH — identical shape):
+{
+  "title": "string",
+  "description": "string (optional)",
+  "steps": "string",
+  "ingredients": [{ "name": "string", "quantity": 2.5, "unit": "cup" }]
+}
+
+recipe response shape:
+{
+  "id": "...", "title": "...", "description": "...", "steps": "...", "createdAt": "...",
+  "ingredients": [{ "id": "...", "name": "...", "quantity": 2.5, "unit": "cup", "displayOrder": 0 }]
+}
+
+Error shape: { "error": "message", "fieldErrors": { "title": ["Title is required"] } }
+(fieldErrors only present on 400 validation failures)
+
+Duplicate ingredient names in one submission (e.g. "egg" added twice) will
+hit the @@unique([recipeId, ingredientId]) constraint on the second insert
+-> catch Prisma error code P2002 in the route handler and return
+400 { error: "Duplicate ingredient in list" }. Don't pre-dedupe client-side;
+let the DB constraint be the source of truth.
+
+VERIFICATION
+------------
+- npm run dev, sign in, click "Add Recipe" from the dashboard, submit with
+  a blank title/no ingredients -> confirm client-side field errors appear
+  without a network call.
+- Submit a valid recipe with 2+ ingredient rows (including a duplicate
+  ingredient name across two recipes, to confirm Ingredient.upsert reuses
+  the row instead of erroring) -> confirm redirect to /dashboard and the
+  new recipe appears in the list with the correct ingredient count.
+- Click into that recipe's edit page -> confirm all fields and ingredient
+  rows are pre-filled correctly, edit the quantity/unit and remove one
+  ingredient row, save -> confirm the change persists and the dashboard
+  count updates.
+- Attempt to load /recipes/<someone-else's-id>/edit (or hit the API route
+  directly with another user's recipe id) while signed in as a different
+  user -> confirm 404, not the recipe's data.
+- npm run lint to catch any straightforward issues before calling this
+  milestone done.
