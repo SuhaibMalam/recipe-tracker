@@ -8,7 +8,7 @@ _Last updated: 2026-09-24_
 
 - Next.js 16.3.6 (App Router, Turbopack), React 19.2.4, plain JavaScript, Tailwind CSS 4
 - Prisma 6.19.3 + PostgreSQL (Neon, `us-east-1`)
-- Better Auth 1.7.0 (pinned `~1.7.0` — its DB schema changes between minors)
+- Better Auth 1.7.6 (pinned `~1.7.x`). Its database schema has changed even in patch releases (1.7.0 added `Account.issuer`, 1.7.6 removed it). After any upgrade, run `npm run test:integration`: `demo-api.test.js` does a real sign-up and fails on schema drift.
 - Zod 4, Vitest 3, Prettier 3, Node ≥ 22
 
 ## Status
@@ -44,7 +44,11 @@ _Last updated: 2026-09-24_
 ## Landing page + demo (2026-09-28)
 
 - `/` is a landing page for visitors; "Try the demo" signs into the shared demo account via `POST /api/demo`.
-- Not done yet: `npm run seed:demo -- --reset` to wipe and reseed the demo (visitors can edit it, and its logs are dated relative to the seed run, so "today" goes stale). Schedule it nightly once deployed.
+- `npm run seed:demo -- --reset` wipes and reseeds the demo through the API (visitors can edit it, and its logs are dated relative to the run, so "today" goes stale). **Still to do:** schedule it nightly once deployed.
+
+## Tech debt Phase A — done (2026-09-28, PR `chore/pre-deploy-cleanup`)
+
+Dependency patches, CI actions v5, data access only via `src/lib`, dead exports removed, demo reset, tests for `/api/me`, `/api/demo`, `proxy.js`. Remaining audit items are sequenced with deployment (monitoring, nightly demo reset) and after launch (password reset/email verification, CSP, table cleanup).
 
 ## Next: Phase 7 — AWS (user drives, Claude guides)
 

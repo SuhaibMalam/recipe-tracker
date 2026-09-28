@@ -10,6 +10,18 @@
 
 - Registering with an email that already has an account now says so and links to sign in, instead of a vague error.
 
+### Changed (pre-deploy cleanup)
+
+- Upgraded `better-auth` 1.7.0 → 1.7.6, `zod` 4.6, Tailwind 4.3; dropped `Account.issuer`, which better-auth 1.7.6 removed (keeping it would have broken sign-up).
+- All database access now goes through `src/lib` (new `profile.js`); the food log's day totals use the same SQL aggregate as the dashboard.
+- CI uses `actions/checkout@v5` / `actions/setup-node@v5`.
+- `npm run seed:demo -- --reset` rebuilds the demo account so "today" always has data.
+- New tests for `/api/me`, `/api/demo` (login-CSRF guard) and `proxy.js` — 54 total.
+
+### Removed
+
+- Unused `useSession` / `authClient` exports.
+
 ## 2026-09-24
 
 ### Added
