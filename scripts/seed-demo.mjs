@@ -3,7 +3,10 @@
 // goes through the same validation as the UI).
 //
 //   npm run seed:demo                         # against http://localhost:3000
+//   npm run seed:demo -- --reset              # wipe the demo account and reseed
 //   SEED_BASE_URL=https://… npm run seed:demo # against a deployed instance
+//
+// Log dates are relative to the run, so run --reset daily to keep "today" filled.
 
 const BASE = process.env.SEED_BASE_URL ?? "http://localhost:3000";
 const DEMO = {
@@ -144,17 +147,49 @@ const localDay = (offset) => {
   return new Intl.DateTimeFormat("en-CA").format(d);
 };
 
-let cookie = "";
+// Minimal cookie jar: merge by name, so a response that only refreshes one
+// cookie doesn't drop the session token.
+const jar = new Map();
 async function call(path, method = "GET", body) {
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: { "content-type": "application/json", origin: BASE, cookie },
+    headers: {
+      "content-type": "application/json",
+      origin: BASE,
+      cookie: [...jar].map(([k, v]) => `${k}=${v}`).join("; "),
+    },
     body: body && JSON.stringify(body),
   });
-  const setCookies = res.headers.getSetCookie?.() ?? [];
-  if (setCookies.length) cookie = setCookies.map((c) => c.split(";")[0]).join("; ");
+  for (const c of res.headers.getSetCookie?.() ?? []) {
+    const pair = c.split(";")[0];
+    const eq = pair.indexOf("=");
+    jar.set(pair.slice(0, eq), pair.slice(eq + 1));
+  }
   const json = res.status === 204 ? null : await res.json().catch(() => null);
   return { status: res.status, json };
+}
+
+async function mustDelete(path) {
+  const { status } = await call(path, "DELETE");
+  if (status !== 204 && status !== 404) throw new Error(`DELETE ${path} failed: ${status}`);
+}
+
+// Wipes the demo user's own data (logs first, so recipe deletes don't have to
+// null out log references). Only ever touches the signed-in demo account.
+async function resetDemo() {
+  const { json } = await call(`/api/logs?from=${localDay(365)}&to=${localDay(-1)}`);
+  for (const log of json.logs) await mustDelete(`/api/logs/${log.id}`);
+
+  let recipesRemoved = 0;
+  for (;;) {
+    const page = await call("/api/recipes");
+    if (page.json.recipes.length === 0) break;
+    for (const r of page.json.recipes) {
+      await mustDelete(`/api/recipes/${r.id}`);
+      recipesRemoved++;
+    }
+  }
+  console.log(`Reset: removed ${recipesRemoved} recipes and ${json.logs.length} log entries.`);
 }
 
 async function main() {
@@ -168,10 +203,16 @@ async function main() {
       throw new Error(`Couldn't create demo user: ${res.status} ${JSON.stringify(res.json)}`);
   }
 
-  const existing = await call("/api/recipes");
-  if (existing.json.total > 0) {
-    console.log(`Demo account already has ${existing.json.total} recipes — nothing to do.`);
-    return;
+  if (process.argv.includes("--reset")) {
+    await resetDemo();
+  } else {
+    const existing = await call("/api/recipes");
+    if (existing.json.total > 0) {
+      console.log(
+        `Demo account already has ${existing.json.total} recipes — nothing to do (use --reset to rebuild).`,
+      );
+      return;
+    }
   }
 
   const ids = [];
