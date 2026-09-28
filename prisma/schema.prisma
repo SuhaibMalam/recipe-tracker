@@ -42,7 +42,6 @@ model Session {
 model Account {
   id                    String    @id @default(cuid())
   userId                String
-  issuer                String
   accountId             String
   providerId            String
   accessToken           String?
@@ -57,7 +56,6 @@ model Account {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([issuer, accountId])
   @@index([userId])
 }
 
