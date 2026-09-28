@@ -4,6 +4,10 @@ import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { signIn } from "@/lib/auth-client";
+import { safeRedirectPath } from "@/lib/safe-redirect";
+import Button from "@/components/ui/Button";
+import Field from "@/components/ui/Field";
+import Alert from "@/components/ui/Alert";
 
 export default function LoginPage() {
   return (
@@ -16,7 +20,7 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const justRegistered = searchParams.get("registered") === "1";
+  const next = safeRedirectPath(searchParams.get("next"));
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -36,84 +40,60 @@ function LoginForm() {
     });
 
     if (error) {
-      setError("Invalid email or password");
+      setError(
+        error.status === 429
+          ? "Too many attempts. Give it a minute and try again."
+          : "That email and password don't match an account.",
+      );
       setLoading(false);
       return;
     }
 
-    router.push("/dashboard");
+    router.replace(next);
+    router.refresh();
   }
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen gap-6 bg-gradient-to-br from-green-50 via-white to-emerald-50 px-4">
-      <Link href="/" className="text-2xl font-bold text-green-600">
-        Recipe Tracker
-      </Link>
+    <>
+      <h1 className="text-3xl font-semibold text-ink">Sign in</h1>
+      <p className="mt-2 text-sm text-ink-muted">Pick up where you left off in the kitchen.</p>
 
-      <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-md">
-        <h1 className="text-2xl font-bold text-gray-800 mb-2">Welcome back</h1>
-        <p className="text-gray-500 text-sm mb-6">Sign in to your account</p>
+      <form onSubmit={handleSubmit} className="mt-8 flex flex-col gap-5">
+        {error && <Alert>{error}</Alert>}
 
-        {justRegistered && !error && (
-          <div className="bg-green-50 text-green-700 text-sm p-3 rounded-lg mb-4">
-            Account created — sign in below.
-          </div>
-        )}
+        <Field
+          label="Email"
+          name="email"
+          type="email"
+          autoComplete="email"
+          value={form.email}
+          onChange={handleChange}
+          required
+        />
+        <Field
+          label="Password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          value={form.password}
+          onChange={handleChange}
+          required
+        />
 
-        {error && (
-          <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg mb-4">
-            {error}
-          </div>
-        )}
+        <Button type="submit" disabled={loading} className="mt-1 w-full">
+          {loading ? "Signing in…" : "Sign in"}
+        </Button>
+      </form>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="text-sm font-medium text-gray-900">Email</label>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              required
-              className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-gray-900">
-              Password
-            </label>
-            <input
-              type="password"
-              name="password"
-              value={form.password}
-              onChange={handleChange}
-              required
-              className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="bg-green-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50 transition"
-          >
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
-
-        <p className="text-sm text-center text-gray-500 mt-6">
-          Don&apos;t have an account?{" "}
-          <Link
-            href="/register"
-            className="text-green-600 font-medium hover:underline"
-          >
-            Create one
-          </Link>
-        </p>
-      </div>
-    </main>
+      <p className="mt-8 text-sm text-ink-muted">
+        New here?{" "}
+        <Link
+          href="/register"
+          className="font-medium text-terracotta-deep underline decoration-terracotta/40 underline-offset-4 hover:decoration-terracotta-deep"
+        >
+          Create an account
+        </Link>
+      </p>
+    </>
   );
 }

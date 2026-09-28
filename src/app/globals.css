@@ -1,33 +1,58 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* "Warm Kitchen" palette. terracotta-deep (not terracotta) backs text-bearing
+   buttons: #C36F4E only reaches 3.7:1 against cream, #A9553A clears 4.5:1. */
+@theme {
+  --color-cream: #fdf6ec;
+  --color-cream-dark: #f5eadb;
+  --color-paper: #fffbf5;
+  --color-line: #eadfcf;
+  --color-ink: #3b2424;
+  --color-ink-muted: #7a625c;
+  --color-terracotta: #c36f4e;
+  --color-terracotta-deep: #a9553a;
+  --color-terracotta-dark: #8e4630;
+  --color-sage: #9bc59d;
+  --color-sage-deep: #4f7a52;
+  --color-mustard: #e3b778;
+  --color-mustard-deep: #8a6420;
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+
+  --shadow-warm: 0 1px 2px rgb(59 36 36 / 0.06), 0 4px 16px -4px rgb(59 36 36 / 0.1);
+  --shadow-warm-lg: 0 2px 4px rgb(59 36 36 / 0.06), 0 12px 32px -8px rgb(59 36 36 / 0.16);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@utility card {
+  background-color: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: 0.875rem;
+  box-shadow: var(--shadow-warm);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* In @layer base so utilities (e.g. font-sans on a heading) can override them;
+   unlayered CSS would beat every Tailwind utility. */
+@layer base {
+  body {
+    background-color: var(--color-cream);
+    color: var(--color-ink);
   }
-}
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
-}
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    letter-spacing: -0.01em;
+  }
 
-input,
-textarea,
-select {
-  color: #111827;
-  background-color: white;
+  ::selection {
+    background-color: var(--color-mustard);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-terracotta-deep);
+    outline-offset: 2px;
+  }
 }
