@@ -184,6 +184,9 @@ export default function RecipeForm({ recipe }) {
                 ? errors[`ingredients.${sentIndex.get(row.key)}.${f}`]
                 : undefined;
             const rowErrors = [err("quantity"), err("unit"), err("name")].filter(Boolean);
+            const errorId = `ingredient-${row.key}-error`;
+            // Points an input that has a problem at the row's error message, for screen readers.
+            const describedBy = (f) => (err(f) ? errorId : undefined);
             const n = i + 1;
 
             return (
@@ -196,12 +199,15 @@ export default function RecipeForm({ recipe }) {
                     placeholder="200"
                     className={inputClasses}
                     aria-invalid={err("quantity") ? true : undefined}
+                    aria-describedby={describedBy("quantity")}
                     value={row.quantity}
                     onChange={(e) => setRow(row.key, { quantity: e.target.value })}
                   />
                   <select
                     aria-label={`Unit for ingredient ${n}`}
                     className={inputClasses}
+                    aria-invalid={err("unit") ? true : undefined}
+                    aria-describedby={describedBy("unit")}
                     value={row.unit}
                     onChange={(e) => setRow(row.key, { unit: e.target.value })}
                   >
@@ -216,6 +222,7 @@ export default function RecipeForm({ recipe }) {
                     placeholder="red lentils"
                     className={`${inputClasses} col-span-2 row-start-2 sm:col-span-1 sm:row-start-auto`}
                     aria-invalid={err("name") ? true : undefined}
+                    aria-describedby={describedBy("name")}
                     autoFocus={row.key === focusKey}
                     value={row.name}
                     onChange={(e) => setRow(row.key, { name: e.target.value })}
@@ -241,7 +248,9 @@ export default function RecipeForm({ recipe }) {
                   </button>
                 </div>
                 {rowErrors.length > 0 && (
-                  <p className="mt-1 text-sm text-terracotta-dark">{rowErrors.join(" · ")}</p>
+                  <p id={errorId} className="mt-1 text-sm text-terracotta-dark">
+                    {rowErrors.join(" · ")}
+                  </p>
                 )}
               </li>
             );
