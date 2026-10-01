@@ -9,6 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "postinstall": "prisma generate",
     "lint": "eslint",
     "test": "vitest run",
     "test:unit": "vitest run --project unit",
@@ -19,20 +20,20 @@
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
-    "better-auth": "~1.7.0",
+    "better-auth": "~1.7.6",
     "next": "^16.3.6",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.3.3",
     "dotenv": "^17.4.2",
     "eslint": "^9",
     "eslint-config-next": "^16.3.6",
     "prettier": "^3.9.9",
     "prisma": "^6.19.3",
-    "tailwindcss": "^4",
+    "tailwindcss": "^4.3.3",
     "vitest": "^3.2.7"
   }
 }
