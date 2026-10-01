@@ -8,6 +8,7 @@
 - **Settings** page (`/settings`, linked in the header): change your name, change your password (signs out other devices), and delete your account with password confirmation — recipes and log go with it. The shared demo account can't be renamed, re-passworded or deleted (403).
 - **Undo** when removing a food log entry: the row fades for five seconds before it's deleted; failures now show Retry.
 - Confirmation message after adding a manual food log entry.
+- Show/hide (eye) toggle on every password field.
 
 ### Fixed
 
