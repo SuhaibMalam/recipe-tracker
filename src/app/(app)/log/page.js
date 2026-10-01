@@ -68,9 +68,10 @@ export default async function LogPage() {
                   </header>
                   <ul className="divide-y divide-line">
                     {entries.map((log) => (
-                      <li key={log.id} className="flex items-center gap-3 px-5 py-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium">
+                      <li key={log.id} className="group flex items-center gap-3 px-5 py-3">
+                        {/* Faded while DeleteLogButton is offering Undo. */}
+                        <div className="min-w-0 flex-1 group-has-[[data-removing]]:opacity-50">
+                          <p className="truncate font-medium group-has-[[data-removing]]:line-through">
                             {log.recipeId ? (
                               <Link
                                 href={`/recipes/${log.recipeId}`}
@@ -89,7 +90,7 @@ export default async function LogPage() {
                           </p>
                           <MacroLine totals={log} className="text-xs text-ink-muted" />
                         </div>
-                        <p className="shrink-0 text-sm font-semibold tabular-nums">
+                        <p className="shrink-0 text-sm font-semibold tabular-nums group-has-[[data-removing]]:opacity-50">
                           {formatNumber(log.calories)} kcal
                         </p>
                         <DeleteLogButton id={log.id} name={log.name} />

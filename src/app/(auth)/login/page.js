@@ -79,6 +79,12 @@ function LoginForm() {
           onChange={handleChange}
           required
         />
+        <Link
+          href="/forgot-password"
+          className="-mt-3 self-end text-sm font-medium text-terracotta-deep underline decoration-terracotta/40 underline-offset-4 hover:decoration-terracotta-deep"
+        >
+          Forgot password?
+        </Link>
 
         <Button type="submit" disabled={loading} className="mt-1 w-full">
           {loading ? "Signing in…" : "Sign in"}

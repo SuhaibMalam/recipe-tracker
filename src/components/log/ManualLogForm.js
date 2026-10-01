@@ -8,6 +8,8 @@ import Alert from "@/components/ui/Alert";
 import { manualLogSchema } from "@/lib/validations/log";
 import { toFieldErrors } from "@/lib/validations/errors";
 import { describeFailure, sendJson } from "@/lib/send-json";
+import { formatDay } from "@/lib/day";
+import { formatNumber } from "@/lib/format";
 
 const empty = { name: "", calories: "", protein: "", carbs: "", fat: "" };
 
@@ -17,12 +19,14 @@ export default function ManualLogForm({ today }) {
   const [errors, setErrors] = useState({});
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [added, setAdded] = useState("");
 
   const setField = (e) => setFields((f) => ({ ...f, [e.target.name]: e.target.value }));
 
   async function handleSubmit(e) {
     e.preventDefault();
     setFormError("");
+    setAdded("");
     const payload = { source: "manual", ...fields };
 
     const parsed = manualLogSchema.safeParse(payload);
@@ -37,6 +41,10 @@ export default function ManualLogForm({ today }) {
     setSaving(false);
 
     if (res.ok) {
+      const { log } = res.body;
+      setAdded(
+        `Added ${log.name} · ${formatNumber(log.calories)} kcal for ${formatDay(fields.day, today).toLowerCase()}.`,
+      );
       setFields((f) => ({ ...empty, day: f.day }));
       router.refresh();
       return;
@@ -112,6 +120,9 @@ export default function ManualLogForm({ today }) {
       <Button type="submit" disabled={saving}>
         {saving ? "Adding…" : "Add to log"}
       </Button>
+      <p aria-live="polite" className="-mt-1 min-h-5 text-sm text-sage-deep">
+        {added}
+      </p>
     </form>
   );
 }

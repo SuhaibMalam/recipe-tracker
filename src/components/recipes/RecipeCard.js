@@ -10,9 +10,9 @@ export default function RecipeCard({ recipe }) {
         href={`/recipes/${recipe.id}`}
         className="card group flex h-full flex-col p-5 transition-[border-color,box-shadow] hover:border-terracotta/50 hover:shadow-warm-lg"
       >
-        <h3 className="text-lg font-semibold leading-snug text-ink group-hover:text-terracotta-dark">
+        <h2 className="text-lg font-semibold leading-snug text-ink group-hover:text-terracotta-dark">
           {recipe.title}
-        </h3>
+        </h2>
         {recipe.description && (
           <p className="mt-1.5 line-clamp-2 text-sm text-ink-muted">{recipe.description}</p>
         )}
