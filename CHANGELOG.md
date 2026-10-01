@@ -4,6 +4,7 @@
 
 ### Added
 
+- **Forgot password**: "Forgot password?" on sign-in emails a one-time link (valid one hour) through Gmail SMTP (`GMAIL_USER`, `GMAIL_APP_PASSWORD`; printed to the terminal in dev when unset). Resetting signs the account out everywhere. Same response whether or not the email is registered; at most 3 requests per 10 minutes.
 - **Settings** page (`/settings`, linked in the header): change your name, change your password (signs out other devices), and delete your account with password confirmation — recipes and log go with it. The shared demo account can't be renamed, re-passworded or deleted (403).
 - **Undo** when removing a food log entry: the row fades for five seconds before it's deleted; failures now show Retry.
 - Confirmation message after adding a manual food log entry.

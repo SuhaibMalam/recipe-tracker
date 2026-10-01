@@ -4,6 +4,7 @@ import { APIError, createAuthMiddleware, getSessionFromCtx } from "better-auth/a
 import { prisma } from "@/lib/prisma";
 import { AUTH_COOKIE_PREFIX } from "@/lib/site";
 import { isDemoUser } from "@/lib/demo";
+import { sendEmail } from "@/lib/email";
 import { nameSchema } from "@/lib/validations/account";
 
 const ACCOUNT_CHANGES = new Set(["/update-user", "/change-password", "/delete-user"]);
@@ -16,6 +17,26 @@ export const auth = betterAuth({
     enabled: true,
     minPasswordLength: 8,
     autoSignIn: true,
+    // The link expires after an hour; resetting signs the account out everywhere.
+    resetPasswordTokenExpiresIn: 60 * 60,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      if (isDemoUser(user)) return; // shared account, and not a real mailbox
+      await sendEmail({
+        to: user.email,
+        subject: "Reset your Recipe Tracker password",
+        text: [
+          `Hi ${user.name},`,
+          "",
+          "Someone asked to reset the password for your Recipe Tracker account.",
+          "Choose a new one here (the link works for one hour):",
+          "",
+          url,
+          "",
+          "If that wasn't you, ignore this email and your password stays the same.",
+        ].join("\n"),
+      });
+    },
   },
   // Self-service deletion. Recipes and logs go with the user via onDelete: Cascade.
   user: { deleteUser: { enabled: true } },
@@ -38,6 +59,8 @@ export const auth = betterAuth({
       "/sign-up/email": { window: 60 * 10, max: 5 },
       "/change-password": { window: 60, max: 5 },
       "/delete-user": { window: 60, max: 5 },
+      // Each request sends an email, so keep it low.
+      "/request-password-reset": { window: 60 * 10, max: 3 },
     },
   },
   advanced: {
