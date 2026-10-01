@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { getCalorieGoal } from "@/lib/profile";
 import { requireUser } from "@/lib/session";
 import { countRecipes, listRecipes } from "@/lib/recipes";
 import { dailyTotals, mostLoggedRecipes } from "@/lib/logs";
@@ -45,12 +45,12 @@ export default async function DashboardPage() {
   const today = await getUserToday();
   const from = addDays(today, -6);
 
-  const [totals, recent, recipeCount, regulars, profile] = await Promise.all([
+  const [totals, recent, recipeCount, regulars, calorieGoal] = await Promise.all([
     dailyTotals(user.id, { from, to: today }),
     listRecipes(user.id, { take: 4 }),
     countRecipes(user.id),
     mostLoggedRecipes(user.id, { from: addDays(today, -29), take: 4 }),
-    prisma.user.findUnique({ where: { id: user.id }, select: { calorieGoal: true } }),
+    getCalorieGoal(user.id),
   ]);
 
   const byDay = new Map(totals.map((t) => [dateToDay(t.day), t]));
@@ -94,8 +94,8 @@ export default async function DashboardPage() {
       ) : (
         <div className="mt-8 grid gap-6">
           <div className="grid gap-6 lg:grid-cols-[20rem_1fr]">
-            <TodaySummary totals={byDay.get(today) ?? ZERO} goal={profile.calorieGoal} />
-            <CalorieChart days={days} goal={profile.calorieGoal} today={today} />
+            <TodaySummary totals={byDay.get(today) ?? ZERO} goal={calorieGoal} />
+            <CalorieChart days={days} goal={calorieGoal} today={today} />
           </div>
           <div className="grid gap-6 md:grid-cols-2">
             <RecipeList

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
-import { listLogs } from "@/lib/logs";
+import { dailyTotals, listLogs } from "@/lib/logs";
 import { getUserToday } from "@/lib/timezone";
 import { addDays, dateToDay, formatDay } from "@/lib/day";
 import { formatNumber } from "@/lib/format";
@@ -11,18 +11,6 @@ import DeleteLogButton from "@/components/log/DeleteLogButton";
 export const metadata = { title: "Food log" };
 
 const HISTORY_DAYS = 14;
-
-function sum(logs) {
-  return logs.reduce(
-    (t, l) => ({
-      calories: t.calories + l.calories,
-      protein: t.protein + l.protein,
-      carbs: t.carbs + l.carbs,
-      fat: t.fat + l.fat,
-    }),
-    { calories: 0, protein: 0, carbs: 0, fat: 0 },
-  );
-}
 
 function MacroLine({ totals, className = "" }) {
   return (
@@ -36,9 +24,12 @@ function MacroLine({ totals, className = "" }) {
 export default async function LogPage() {
   const user = await requireUser();
   const today = await getUserToday();
-  const logs = await listLogs(user.id, { from: addDays(today, -(HISTORY_DAYS - 1)), to: today });
+  const range = { from: addDays(today, -(HISTORY_DAYS - 1)), to: today };
+  // Day totals come from the same SQL aggregate the dashboard uses, so both pages always agree.
+  const [logs, totals] = await Promise.all([listLogs(user.id, range), dailyTotals(user.id, range)]);
 
   const byDay = Map.groupBy(logs, (log) => dateToDay(log.day));
+  const totalsByDay = new Map(totals.map((t) => [dateToDay(t.day), t]));
 
   return (
     <>
@@ -60,7 +51,7 @@ export default async function LogPage() {
             </EmptyState>
           ) : (
             [...byDay].map(([day, entries]) => {
-              const totals = sum(entries);
+              const totals = totalsByDay.get(day);
               return (
                 <section key={day} aria-labelledby={`day-${day}`} className="card overflow-hidden">
                   <header className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line bg-cream-dark/40 px-5 py-3">
