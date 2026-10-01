@@ -36,6 +36,7 @@ export default async function AppLayout({ children }) {
           </nav>
           <div className="ml-auto flex items-center gap-2">
             <span className="hidden text-sm text-ink-muted sm:block">{user.name}</span>
+            <NavLink href="/settings">Settings</NavLink>
             <SignOutButton />
           </div>
         </div>
