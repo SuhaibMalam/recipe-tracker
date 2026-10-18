@@ -23,7 +23,7 @@ _Last updated: 2026-09-24_
 | 4 — Polish (search, pagination, a11y, security) | Done, except image upload (needs S3)          |
 | 5 — Tests                                       | Done — 27 unit + 17 integration               |
 | 6 — CI + docs                                   | Done — CI not yet run on GitHub (push needed) |
-| 7 — AWS deployment                              | **Next.**         |
+| 7 — AWS deployment                              | **Next.**                                     |
 
 ## Verified by hand (2026-09-24)
 
